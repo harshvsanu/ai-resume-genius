@@ -21,10 +21,7 @@ export async function extractTextFromFile(file: File): Promise<string> {
 }
 
 async function extractPdfText(file: File): Promise<string> {
-  // Dynamic import keeps pdfjs out of SSR
-  const pdfjs = await import("pdfjs-dist");
-  // Use a CDN worker matching the installed version
-  // @ts-expect-error - GlobalWorkerOptions exists at runtime
+  const pdfjs: any = await import("pdfjs-dist");
   pdfjs.GlobalWorkerOptions.workerSrc = `https://cdn.jsdelivr.net/npm/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
 
   const arrayBuffer = await file.arrayBuffer();
@@ -34,8 +31,7 @@ async function extractPdfText(file: File): Promise<string> {
     const page = await doc.getPage(i);
     const content = await page.getTextContent();
     const text = content.items
-      // @ts-expect-error - 'str' exists on TextItem
-      .map((item) => ("str" in item ? item.str : ""))
+      .map((item: any) => ("str" in item ? item.str : ""))
       .join(" ");
     fullText += text + "\n\n";
   }
