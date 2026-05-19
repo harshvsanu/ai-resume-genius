@@ -3,7 +3,7 @@ import { useEffect, useState, useCallback } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
-import { extractResumeData, analyzeResume } from "@/lib/resume.functions";
+import { extractResumeData, analyzeResume, deleteResume } from "@/lib/resume.functions";
 import { extractTextFromFile } from "@/lib/extract-text";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
