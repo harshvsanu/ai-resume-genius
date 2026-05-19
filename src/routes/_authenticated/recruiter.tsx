@@ -25,7 +25,7 @@ function RecruiterPage() {
   const [jobTitle, setJobTitle] = useState("");
   const [jd, setJd] = useState("");
 
-  const rolesQ = useQuery({ queryKey: ["my-roles"], queryFn: () => rolesFn() });
+  const rolesQ = useQuery({ queryKey: ["my-roles"], queryFn: rolesFn });
   const isRecruiter = (rolesQ.data?.roles ?? []).includes("recruiter") || (rolesQ.data?.roles ?? []).includes("admin");
 
   const rankMut = useMutation({
@@ -37,7 +37,7 @@ function RecruiterPage() {
   });
 
   const grantMut = useMutation({
-    mutationFn: () => becomeFn({}),
+    mutationFn: () => becomeFn(),
     onSuccess: () => {
       toast.success("Recruiter mode enabled — you can now rank all candidates.");
       qc.invalidateQueries({ queryKey: ["my-roles"] });
