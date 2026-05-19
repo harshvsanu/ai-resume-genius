@@ -1,0 +1,47 @@
+import { createFileRoute, redirect, Outlet, Link, useNavigate } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { Button } from "@/components/ui/button";
+import { Sparkles, LogOut } from "lucide-react";
+
+export const Route = createFileRoute("/_authenticated")({
+  beforeLoad: async () => {
+    const { data } = await supabase.auth.getSession();
+    if (!data.session) throw redirect({ to: "/login" });
+  },
+  component: AuthLayout,
+});
+
+function AuthLayout() {
+  const navigate = useNavigate();
+  const [email, setEmail] = useState<string | null>(null);
+
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data }) => setEmail(data.user?.email ?? null));
+  }, []);
+
+  const signOut = async () => {
+    await supabase.auth.signOut();
+    navigate({ to: "/login" });
+  };
+
+  return (
+    <div className="min-h-screen bg-background">
+      <header className="sticky top-0 z-40 glass">
+        <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-6">
+          <Link to="/dashboard" className="flex items-center gap-2 font-display text-lg font-bold">
+            <div className="grid h-8 w-8 place-items-center rounded-lg bg-gradient-to-br from-primary to-primary/70 text-primary-foreground">
+              <Sparkles className="h-4 w-4" />
+            </div>
+            ResumeIQ
+          </Link>
+          <div className="flex items-center gap-3">
+            {email && <span className="hidden text-sm text-muted-foreground sm:inline">{email}</span>}
+            <Button onClick={signOut} variant="ghost" size="sm"><LogOut className="h-4 w-4 mr-1.5" /> Sign out</Button>
+          </div>
+        </div>
+      </header>
+      <main><Outlet /></main>
+    </div>
+  );
+}
