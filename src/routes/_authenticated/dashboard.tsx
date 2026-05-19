@@ -99,8 +99,7 @@ function Dashboard() {
 
       toast.info("AI is parsing your resume…");
       await extractFn({ data: { resumeId: inserted.id, rawText } });
-      toast.success("Resume parsed!");
-      setSelectedResume(inserted.id);
+      toast.success("Resume parsed! Click it in the list to view details.");
       qc.invalidateQueries({ queryKey: ["resumes"] });
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Upload failed");
@@ -108,6 +107,18 @@ function Dashboard() {
       setUploading(false);
     }
   }, [userId, extractFn, qc]);
+
+  const deleteFn = useServerFn(deleteResume);
+  const deleteMut = useMutation({
+    mutationFn: (id: string) => deleteFn({ data: { resumeId: id } }),
+    onSuccess: (_d, id) => {
+      toast.success("Resume deleted");
+      if (selectedResume === id) setSelectedResume(null);
+      qc.invalidateQueries({ queryKey: ["resumes"] });
+      qc.invalidateQueries({ queryKey: ["analyses"] });
+    },
+    onError: (e) => toast.error(e instanceof Error ? e.message : "Delete failed"),
+  });
 
   const analyzeMut = useMutation({
     mutationFn: async () => {
