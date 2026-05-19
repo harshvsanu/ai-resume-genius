@@ -155,11 +155,25 @@ function Dashboard() {
           <ResumesList
             resumes={resumes} loading={resumesQ.isLoading}
             selected={selectedResume} onSelect={setSelectedResume}
+            onDelete={(id) => deleteMut.mutate(id)}
+            deletingId={deleteMut.isPending ? deleteMut.variables ?? null : null}
           />
         </div>
 
         <div className="space-y-6 lg:col-span-2">
-          {currentResume && <ResumeDetails resume={currentResume} />}
+          {currentResume ? (
+            <ResumeDetails resume={currentResume} onClose={() => setSelectedResume(null)} />
+          ) : (
+            <Card className="p-10 text-center">
+              <div className="mx-auto mb-3 grid h-12 w-12 place-items-center rounded-full bg-accent text-accent-foreground">
+                <FileSearch className="h-5 w-5" />
+              </div>
+              <h3 className="font-semibold">No resume selected</h3>
+              <p className="text-sm text-muted-foreground mt-1">
+                Click a resume in the list to view its parsed details, or upload a new one.
+              </p>
+            </Card>
+          )}
 
           <Card className="p-6">
             <div className="flex items-center gap-2 mb-4">
