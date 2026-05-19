@@ -42,8 +42,20 @@ function AuthLayout() {
             </div>
             ResumeIQ
           </Link>
+          <nav className="hidden md:flex items-center gap-1">
+            {NAV.map((n) => (
+              <Link
+                key={n.to}
+                to={n.to}
+                className="rounded-md px-3 py-1.5 text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground transition flex items-center gap-1.5"
+                activeProps={{ className: "rounded-md px-3 py-1.5 text-sm font-medium bg-accent text-accent-foreground flex items-center gap-1.5" }}
+              >
+                <n.icon className="h-3.5 w-3.5" /> {n.label}
+              </Link>
+            ))}
+          </nav>
           <div className="flex items-center gap-3">
-            {email && <span className="hidden text-sm text-muted-foreground sm:inline">{email}</span>}
+            {email && <span className="hidden text-sm text-muted-foreground lg:inline">{email}</span>}
             <Button onClick={signOut} variant="ghost" size="sm"><LogOut className="h-4 w-4 mr-1.5" /> Sign out</Button>
           </div>
         </div>
