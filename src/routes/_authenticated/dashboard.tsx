@@ -246,7 +246,7 @@ function UploadCard({ onUpload, uploading }: { onUpload: (f: File) => void; uplo
   );
 }
 
-function ResumesList({ resumes, loading, selected, onSelect }: {
+
 function ResumesList({ resumes, loading, selected, onSelect, onDelete, deletingId }: {
   resumes: Resume[]; loading: boolean; selected: string | null;
   onSelect: (id: string) => void; onDelete: (id: string) => void; deletingId: string | null;
