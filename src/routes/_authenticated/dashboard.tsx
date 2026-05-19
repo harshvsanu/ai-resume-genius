@@ -13,10 +13,11 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { toast } from "sonner";
-import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip, CartesianGrid, LineChart, Line } from "recharts";
+import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip, CartesianGrid, LineChart, Line, PieChart, Pie, Cell, RadialBarChart, RadialBar, PolarAngleAxis } from "recharts";
 import {
-  Upload, FileText, Loader2, Target, CheckCircle2, XCircle, Lightbulb, Award, Sparkles, TrendingUp,
+  Upload, FileText, Loader2, Target, CheckCircle2, XCircle, Lightbulb, Award, Sparkles, TrendingUp, Trash2, FileSearch,
 } from "lucide-react";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   component: Dashboard,
