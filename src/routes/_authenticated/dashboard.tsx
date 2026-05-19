@@ -3,7 +3,7 @@ import { useEffect, useState, useCallback } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
-import { extractResumeData, analyzeResume } from "@/lib/resume.functions";
+import { extractResumeData, analyzeResume, deleteResume } from "@/lib/resume.functions";
 import { extractTextFromFile } from "@/lib/extract-text";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -13,10 +13,11 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { toast } from "sonner";
-import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip, CartesianGrid, LineChart, Line } from "recharts";
+import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip, CartesianGrid, LineChart, Line, PieChart, Pie, Cell, RadialBarChart, RadialBar, PolarAngleAxis } from "recharts";
 import {
-  Upload, FileText, Loader2, Target, CheckCircle2, XCircle, Lightbulb, Award, Sparkles, TrendingUp,
+  Upload, FileText, Loader2, Target, CheckCircle2, XCircle, Lightbulb, Award, Sparkles, TrendingUp, Trash2, FileSearch,
 } from "lucide-react";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   component: Dashboard,
@@ -98,8 +99,7 @@ function Dashboard() {
 
       toast.info("AI is parsing your resume…");
       await extractFn({ data: { resumeId: inserted.id, rawText } });
-      toast.success("Resume parsed!");
-      setSelectedResume(inserted.id);
+      toast.success("Resume parsed! Click it in the list to view details.");
       qc.invalidateQueries({ queryKey: ["resumes"] });
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Upload failed");
@@ -107,6 +107,18 @@ function Dashboard() {
       setUploading(false);
     }
   }, [userId, extractFn, qc]);
+
+  const deleteFn = useServerFn(deleteResume);
+  const deleteMut = useMutation({
+    mutationFn: (id: string) => deleteFn({ data: { resumeId: id } }),
+    onSuccess: (_d, id) => {
+      toast.success("Resume deleted");
+      if (selectedResume === id) setSelectedResume(null);
+      qc.invalidateQueries({ queryKey: ["resumes"] });
+      qc.invalidateQueries({ queryKey: ["analyses"] });
+    },
+    onError: (e) => toast.error(e instanceof Error ? e.message : "Delete failed"),
+  });
 
   const analyzeMut = useMutation({
     mutationFn: async () => {
@@ -143,11 +155,25 @@ function Dashboard() {
           <ResumesList
             resumes={resumes} loading={resumesQ.isLoading}
             selected={selectedResume} onSelect={setSelectedResume}
+            onDelete={(id) => deleteMut.mutate(id)}
+            deletingId={deleteMut.isPending ? deleteMut.variables ?? null : null}
           />
         </div>
 
         <div className="space-y-6 lg:col-span-2">
-          {currentResume && <ResumeDetails resume={currentResume} />}
+          {currentResume ? (
+            <ResumeDetails resume={currentResume} onClose={() => setSelectedResume(null)} />
+          ) : (
+            <Card className="p-10 text-center">
+              <div className="mx-auto mb-3 grid h-12 w-12 place-items-center rounded-full bg-accent text-accent-foreground">
+                <FileSearch className="h-5 w-5" />
+              </div>
+              <h3 className="font-semibold">No resume selected</h3>
+              <p className="text-sm text-muted-foreground mt-1">
+                Click a resume in the list to view its parsed details, or upload a new one.
+              </p>
+            </Card>
+          )}
 
           <Card className="p-6">
             <div className="flex items-center gap-2 mb-4">
@@ -220,8 +246,10 @@ function UploadCard({ onUpload, uploading }: { onUpload: (f: File) => void; uplo
   );
 }
 
-function ResumesList({ resumes, loading, selected, onSelect }: {
-  resumes: Resume[]; loading: boolean; selected: string | null; onSelect: (id: string) => void;
+
+function ResumesList({ resumes, loading, selected, onSelect, onDelete, deletingId }: {
+  resumes: Resume[]; loading: boolean; selected: string | null;
+  onSelect: (id: string) => void; onDelete: (id: string) => void; deletingId: string | null;
 }) {
   return (
     <Card className="p-4">
@@ -230,10 +258,10 @@ function ResumesList({ resumes, loading, selected, onSelect }: {
       {!loading && resumes.length === 0 && <div className="p-4 text-sm text-muted-foreground">No resumes yet.</div>}
       <ul className="space-y-1">
         {resumes.map((r) => (
-          <li key={r.id}>
+          <li key={r.id} className={`group flex items-stretch rounded-md transition ${selected === r.id ? "bg-accent text-accent-foreground" : "hover:bg-muted"}`}>
             <button
               onClick={() => onSelect(r.id)}
-              className={`w-full text-left rounded-md px-3 py-2 text-sm transition flex items-start gap-2 ${selected === r.id ? "bg-accent text-accent-foreground" : "hover:bg-muted"}`}
+              className="flex-1 text-left px-3 py-2 text-sm flex items-start gap-2 min-w-0"
             >
               <FileText className="h-4 w-4 mt-0.5 shrink-0" />
               <div className="min-w-0">
@@ -241,6 +269,32 @@ function ResumesList({ resumes, loading, selected, onSelect }: {
                 <div className="text-xs text-muted-foreground">{new Date(r.created_at).toLocaleDateString()} · {r.status}</div>
               </div>
             </button>
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <button
+                  className="px-2 text-muted-foreground hover:text-destructive opacity-60 group-hover:opacity-100 transition"
+                  aria-label="Delete resume"
+                  disabled={deletingId === r.id}
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  {deletingId === r.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+                </button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Delete this resume?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    “{r.file_name}” and all its analyses will be permanently removed.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction onClick={() => onDelete(r.id)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                    Delete
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
           </li>
         ))}
       </ul>
@@ -248,13 +302,17 @@ function ResumesList({ resumes, loading, selected, onSelect }: {
   );
 }
 
-function ResumeDetails({ resume }: { resume: Resume }) {
+function ResumeDetails({ resume, onClose }: { resume: Resume; onClose: () => void }) {
   return (
     <Card className="p-6">
-      <div className="flex items-center gap-2 mb-3">
-        <Award className="h-5 w-5 text-primary" />
-        <h2 className="text-lg font-semibold">Parsed resume</h2>
+      <div className="flex items-center justify-between gap-2 mb-3">
+        <div className="flex items-center gap-2">
+          <Award className="h-5 w-5 text-primary" />
+          <h2 className="text-lg font-semibold">Parsed resume</h2>
+        </div>
+        <Button variant="ghost" size="sm" onClick={onClose}>Close</Button>
       </div>
+      <div className="text-xs text-muted-foreground mb-2">{resume.file_name}</div>
       {resume.candidate_name && <p className="text-sm"><span className="text-muted-foreground">Name:</span> {resume.candidate_name}</p>}
       {resume.summary && <p className="text-sm mt-2 text-muted-foreground">{resume.summary}</p>}
       {resume.skills?.length > 0 && (
@@ -304,6 +362,17 @@ function AnalysesList({ analyses, loading }: { analyses: Analysis[]; loading: bo
 
 function AnalysisCard({ a }: { a: Analysis }) {
   const tone = a.ats_score >= 75 ? "text-[var(--color-success)]" : a.ats_score >= 50 ? "text-[var(--color-warning)]" : "text-destructive";
+  const matched = a.matched_skills?.length ?? 0;
+  const missing = a.missing_skills?.length ?? 0;
+  const total = matched + missing;
+  const pieData = total > 0
+    ? [{ name: "Matched", value: matched }, { name: "Missing", value: missing }]
+    : [{ name: "No data", value: 1 }];
+  const PIE_COLORS = total > 0
+    ? ["var(--color-success)", "var(--destructive)"]
+    : ["var(--muted)"];
+  const scoreData = [{ name: "ATS", value: a.ats_score, fill: a.ats_score >= 75 ? "var(--color-success)" : a.ats_score >= 50 ? "var(--color-warning)" : "var(--destructive)" }];
+
   return (
     <Card className="p-6">
       <div className="flex flex-wrap items-start justify-between gap-3 mb-4">
@@ -318,6 +387,34 @@ function AnalysisCard({ a }: { a: Analysis }) {
       </div>
       <Progress value={a.ats_score} className="mb-4" />
       {a.verdict && <p className="text-sm mb-4">{a.verdict}</p>}
+
+      <div className="grid sm:grid-cols-2 gap-4 mb-4">
+        <div className="rounded-lg border p-3">
+          <div className="text-xs font-medium text-muted-foreground mb-1 text-center">Skill match</div>
+          <ResponsiveContainer width="100%" height={160}>
+            <PieChart>
+              <Pie data={pieData} dataKey="value" cx="50%" cy="50%" innerRadius={40} outerRadius={65} paddingAngle={2}>
+                {pieData.map((_, i) => <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />)}
+              </Pie>
+              <Tooltip contentStyle={{ background: "var(--background)", border: "1px solid var(--border)", borderRadius: 8, fontSize: 12 }} />
+            </PieChart>
+          </ResponsiveContainer>
+          <div className="flex justify-center gap-4 text-xs">
+            <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full" style={{ background: "var(--color-success)" }} /> {matched} matched</span>
+            <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-destructive" /> {missing} missing</span>
+          </div>
+        </div>
+        <div className="rounded-lg border p-3">
+          <div className="text-xs font-medium text-muted-foreground mb-1 text-center">ATS gauge</div>
+          <ResponsiveContainer width="100%" height={160}>
+            <RadialBarChart data={scoreData} startAngle={210} endAngle={-30} innerRadius={55} outerRadius={75}>
+              <PolarAngleAxis type="number" domain={[0, 100]} tick={false} />
+              <RadialBar background={{ fill: "var(--muted)" }} dataKey="value" cornerRadius={8} />
+            </RadialBarChart>
+          </ResponsiveContainer>
+          <div className="text-center text-xs text-muted-foreground -mt-2">{a.ats_score} / 100</div>
+        </div>
+      </div>
 
       <div className="grid sm:grid-cols-2 gap-4">
         <Section title="Matched skills" icon={<CheckCircle2 className="h-4 w-4 text-[var(--color-success)]" />} items={a.matched_skills} variant="success" />

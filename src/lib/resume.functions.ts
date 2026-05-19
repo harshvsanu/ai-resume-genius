@@ -3,6 +3,24 @@ import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { callAIJson } from "./ai.server";
 
+export const deleteResume = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => z.object({ resumeId: z.string().uuid() }).parse(input))
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    const { data: r, error: rErr } = await supabase
+      .from("resumes").select("id, user_id, file_path").eq("id", data.resumeId).single();
+    if (rErr || !r) throw new Error("Resume not found");
+    if (r.user_id !== userId) throw new Error("Forbidden");
+
+    await supabase.from("analyses").delete().eq("resume_id", data.resumeId);
+    if (r.file_path) await supabase.storage.from("resumes").remove([r.file_path]);
+    const { error: delErr } = await supabase.from("resumes").delete().eq("id", data.resumeId);
+    if (delErr) throw new Error(delErr.message);
+    return { ok: true };
+  });
+
+
 const ExtractInput = z.object({
   resumeId: z.string().uuid(),
   rawText: z.string().min(20).max(200_000),
