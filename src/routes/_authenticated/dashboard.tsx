@@ -178,6 +178,7 @@ function Dashboard() {
             </div>
           </Card>
 
+          <AnalyticsPanel analyses={analyses} />
           <AnalysesList analyses={relevantAnalyses} loading={analysesQ.isLoading} />
         </div>
       </div>
