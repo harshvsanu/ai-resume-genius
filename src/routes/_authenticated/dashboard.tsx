@@ -13,8 +13,9 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { toast } from "sonner";
+import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip, CartesianGrid, LineChart, Line } from "recharts";
 import {
-  Upload, FileText, Loader2, Target, CheckCircle2, XCircle, Lightbulb, Award, Sparkles,
+  Upload, FileText, Loader2, Target, CheckCircle2, XCircle, Lightbulb, Award, Sparkles, TrendingUp,
 } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
