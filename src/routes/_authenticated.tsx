@@ -2,7 +2,14 @@ import { createFileRoute, redirect, Outlet, Link, useNavigate } from "@tanstack/
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Sparkles, LogOut } from "lucide-react";
+import { Sparkles, LogOut, LayoutDashboard, Users, Bot, MessageSquareQuote } from "lucide-react";
+
+const NAV = [
+  { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { to: "/recruiter", label: "Recruiter", icon: Users },
+  { to: "/coach", label: "Coach", icon: Bot },
+  { to: "/interview", label: "Interview", icon: MessageSquareQuote },
+] as const;
 
 export const Route = createFileRoute("/_authenticated")({
   beforeLoad: async () => {
