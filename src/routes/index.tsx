@@ -186,7 +186,7 @@ function Footer() {
         <div className="flex items-center gap-2">
           <Sparkles className="h-4 w-4 text-primary" /> ResumeIQ
         </div>
-        <div>© {new Date().getFullYear()} ResumeIQ. Built with AI.</div>
+        <div>© {new Date().getFullYear()} ResumeIQ</div>
       </div>
     </footer>
   );
