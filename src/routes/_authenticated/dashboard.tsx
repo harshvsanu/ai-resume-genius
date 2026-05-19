@@ -247,7 +247,9 @@ function UploadCard({ onUpload, uploading }: { onUpload: (f: File) => void; uplo
 }
 
 function ResumesList({ resumes, loading, selected, onSelect }: {
-  resumes: Resume[]; loading: boolean; selected: string | null; onSelect: (id: string) => void;
+function ResumesList({ resumes, loading, selected, onSelect, onDelete, deletingId }: {
+  resumes: Resume[]; loading: boolean; selected: string | null;
+  onSelect: (id: string) => void; onDelete: (id: string) => void; deletingId: string | null;
 }) {
   return (
     <Card className="p-4">
@@ -256,10 +258,10 @@ function ResumesList({ resumes, loading, selected, onSelect }: {
       {!loading && resumes.length === 0 && <div className="p-4 text-sm text-muted-foreground">No resumes yet.</div>}
       <ul className="space-y-1">
         {resumes.map((r) => (
-          <li key={r.id}>
+          <li key={r.id} className={`group flex items-stretch rounded-md transition ${selected === r.id ? "bg-accent text-accent-foreground" : "hover:bg-muted"}`}>
             <button
               onClick={() => onSelect(r.id)}
-              className={`w-full text-left rounded-md px-3 py-2 text-sm transition flex items-start gap-2 ${selected === r.id ? "bg-accent text-accent-foreground" : "hover:bg-muted"}`}
+              className="flex-1 text-left px-3 py-2 text-sm flex items-start gap-2 min-w-0"
             >
               <FileText className="h-4 w-4 mt-0.5 shrink-0" />
               <div className="min-w-0">
@@ -267,6 +269,32 @@ function ResumesList({ resumes, loading, selected, onSelect }: {
                 <div className="text-xs text-muted-foreground">{new Date(r.created_at).toLocaleDateString()} · {r.status}</div>
               </div>
             </button>
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <button
+                  className="px-2 text-muted-foreground hover:text-destructive opacity-60 group-hover:opacity-100 transition"
+                  aria-label="Delete resume"
+                  disabled={deletingId === r.id}
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  {deletingId === r.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+                </button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Delete this resume?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    “{r.file_name}” and all its analyses will be permanently removed.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction onClick={() => onDelete(r.id)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                    Delete
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
           </li>
         ))}
       </ul>
@@ -274,13 +302,17 @@ function ResumesList({ resumes, loading, selected, onSelect }: {
   );
 }
 
-function ResumeDetails({ resume }: { resume: Resume }) {
+function ResumeDetails({ resume, onClose }: { resume: Resume; onClose: () => void }) {
   return (
     <Card className="p-6">
-      <div className="flex items-center gap-2 mb-3">
-        <Award className="h-5 w-5 text-primary" />
-        <h2 className="text-lg font-semibold">Parsed resume</h2>
+      <div className="flex items-center justify-between gap-2 mb-3">
+        <div className="flex items-center gap-2">
+          <Award className="h-5 w-5 text-primary" />
+          <h2 className="text-lg font-semibold">Parsed resume</h2>
+        </div>
+        <Button variant="ghost" size="sm" onClick={onClose}>Close</Button>
       </div>
+      <div className="text-xs text-muted-foreground mb-2">{resume.file_name}</div>
       {resume.candidate_name && <p className="text-sm"><span className="text-muted-foreground">Name:</span> {resume.candidate_name}</p>}
       {resume.summary && <p className="text-sm mt-2 text-muted-foreground">{resume.summary}</p>}
       {resume.skills?.length > 0 && (
