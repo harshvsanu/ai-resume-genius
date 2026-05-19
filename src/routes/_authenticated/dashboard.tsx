@@ -13,8 +13,9 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { toast } from "sonner";
+import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip, CartesianGrid, LineChart, Line } from "recharts";
 import {
-  Upload, FileText, Loader2, Target, CheckCircle2, XCircle, Lightbulb, Award, Sparkles,
+  Upload, FileText, Loader2, Target, CheckCircle2, XCircle, Lightbulb, Award, Sparkles, TrendingUp,
 } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
@@ -177,6 +178,7 @@ function Dashboard() {
             </div>
           </Card>
 
+          <AnalyticsPanel analyses={analyses} />
           <AnalysesList analyses={relevantAnalyses} loading={analysesQ.isLoading} />
         </div>
       </div>
@@ -335,6 +337,86 @@ function AnalysisCard({ a }: { a: Analysis }) {
         </div>
       )}
     </Card>
+  );
+}
+
+function AnalyticsPanel({ analyses }: { analyses: Analysis[] }) {
+  if (!analyses || analyses.length === 0) return null;
+
+  const trend = [...analyses]
+    .sort((a, b) => +new Date(a.created_at) - +new Date(b.created_at))
+    .slice(-12)
+    .map((a) => ({
+      date: new Date(a.created_at).toLocaleDateString(undefined, { month: "short", day: "numeric" }),
+      score: a.ats_score,
+    }));
+
+  const skillCounts = new Map<string, number>();
+  for (const a of analyses) {
+    for (const s of a.matched_skills ?? []) {
+      const k = s.trim().toLowerCase();
+      if (k) skillCounts.set(k, (skillCounts.get(k) ?? 0) + 1);
+    }
+  }
+  const topSkills = [...skillCounts.entries()]
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 8)
+    .map(([name, count]) => ({ name, count }));
+
+  const avg = Math.round(analyses.reduce((s, a) => s + a.ats_score, 0) / analyses.length);
+  const best = Math.max(...analyses.map((a) => a.ats_score));
+
+  return (
+    <Card className="p-6">
+      <div className="flex items-center gap-2 mb-4">
+        <TrendingUp className="h-5 w-5 text-primary" />
+        <h2 className="font-semibold">Analytics</h2>
+      </div>
+      <div className="grid grid-cols-3 gap-3 mb-6">
+        <Stat label="Analyses" value={analyses.length} />
+        <Stat label="Avg ATS" value={avg} />
+        <Stat label="Best ATS" value={best} />
+      </div>
+      <div className="grid lg:grid-cols-2 gap-6">
+        <div>
+          <div className="text-xs font-medium text-muted-foreground mb-2">ATS score trend</div>
+          <ResponsiveContainer width="100%" height={180}>
+            <LineChart data={trend}>
+              <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" opacity={0.4} />
+              <XAxis dataKey="date" stroke="var(--muted-foreground)" fontSize={11} />
+              <YAxis domain={[0, 100]} stroke="var(--muted-foreground)" fontSize={11} />
+              <Tooltip contentStyle={{ background: "var(--background)", border: "1px solid var(--border)", borderRadius: 8, fontSize: 12 }} />
+              <Line type="monotone" dataKey="score" stroke="var(--primary)" strokeWidth={2} dot={{ r: 3 }} />
+            </LineChart>
+          </ResponsiveContainer>
+        </div>
+        <div>
+          <div className="text-xs font-medium text-muted-foreground mb-2">Top matched skills</div>
+          {topSkills.length === 0 ? (
+            <p className="text-sm text-muted-foreground">No matched skills yet.</p>
+          ) : (
+            <ResponsiveContainer width="100%" height={180}>
+              <BarChart data={topSkills} layout="vertical" margin={{ left: 8 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" opacity={0.4} />
+                <XAxis type="number" stroke="var(--muted-foreground)" fontSize={11} />
+                <YAxis type="category" dataKey="name" width={80} stroke="var(--muted-foreground)" fontSize={11} />
+                <Tooltip contentStyle={{ background: "var(--background)", border: "1px solid var(--border)", borderRadius: 8, fontSize: 12 }} />
+                <Bar dataKey="count" fill="var(--primary)" radius={[0, 4, 4, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          )}
+        </div>
+      </div>
+    </Card>
+  );
+}
+
+function Stat({ label, value }: { label: string; value: number | string }) {
+  return (
+    <div className="rounded-lg border bg-card p-3">
+      <div className="text-xs text-muted-foreground">{label}</div>
+      <div className="font-display text-2xl font-bold">{value}</div>
+    </div>
   );
 }
 
