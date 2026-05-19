@@ -362,6 +362,17 @@ function AnalysesList({ analyses, loading }: { analyses: Analysis[]; loading: bo
 
 function AnalysisCard({ a }: { a: Analysis }) {
   const tone = a.ats_score >= 75 ? "text-[var(--color-success)]" : a.ats_score >= 50 ? "text-[var(--color-warning)]" : "text-destructive";
+  const matched = a.matched_skills?.length ?? 0;
+  const missing = a.missing_skills?.length ?? 0;
+  const total = matched + missing;
+  const pieData = total > 0
+    ? [{ name: "Matched", value: matched }, { name: "Missing", value: missing }]
+    : [{ name: "No data", value: 1 }];
+  const PIE_COLORS = total > 0
+    ? ["var(--color-success)", "var(--destructive)"]
+    : ["var(--muted)"];
+  const scoreData = [{ name: "ATS", value: a.ats_score, fill: a.ats_score >= 75 ? "var(--color-success)" : a.ats_score >= 50 ? "var(--color-warning)" : "var(--destructive)" }];
+
   return (
     <Card className="p-6">
       <div className="flex flex-wrap items-start justify-between gap-3 mb-4">
@@ -376,6 +387,34 @@ function AnalysisCard({ a }: { a: Analysis }) {
       </div>
       <Progress value={a.ats_score} className="mb-4" />
       {a.verdict && <p className="text-sm mb-4">{a.verdict}</p>}
+
+      <div className="grid sm:grid-cols-2 gap-4 mb-4">
+        <div className="rounded-lg border p-3">
+          <div className="text-xs font-medium text-muted-foreground mb-1 text-center">Skill match</div>
+          <ResponsiveContainer width="100%" height={160}>
+            <PieChart>
+              <Pie data={pieData} dataKey="value" cx="50%" cy="50%" innerRadius={40} outerRadius={65} paddingAngle={2}>
+                {pieData.map((_, i) => <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />)}
+              </Pie>
+              <Tooltip contentStyle={{ background: "var(--background)", border: "1px solid var(--border)", borderRadius: 8, fontSize: 12 }} />
+            </PieChart>
+          </ResponsiveContainer>
+          <div className="flex justify-center gap-4 text-xs">
+            <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full" style={{ background: "var(--color-success)" }} /> {matched} matched</span>
+            <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-destructive" /> {missing} missing</span>
+          </div>
+        </div>
+        <div className="rounded-lg border p-3">
+          <div className="text-xs font-medium text-muted-foreground mb-1 text-center">ATS gauge</div>
+          <ResponsiveContainer width="100%" height={160}>
+            <RadialBarChart data={scoreData} startAngle={210} endAngle={-30} innerRadius={55} outerRadius={75}>
+              <PolarAngleAxis type="number" domain={[0, 100]} tick={false} />
+              <RadialBar background={{ fill: "var(--muted)" }} dataKey="value" cornerRadius={8} />
+            </RadialBarChart>
+          </ResponsiveContainer>
+          <div className="text-center text-xs text-muted-foreground -mt-2">{a.ats_score} / 100</div>
+        </div>
+      </div>
 
       <div className="grid sm:grid-cols-2 gap-4">
         <Section title="Matched skills" icon={<CheckCircle2 className="h-4 w-4 text-[var(--color-success)]" />} items={a.matched_skills} variant="success" />
