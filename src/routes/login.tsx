@@ -8,7 +8,16 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable/index";
 import { toast } from "sonner";
-import { Sparkles, Loader2 } from "lucide-react";
+import { Sparkles, Loader2, GraduationCap, Users, ShieldCheck } from "lucide-react";
+import { cn } from "@/lib/utils";
+
+type UserType = "candidate" | "recruiter" | "admin";
+
+const ROLE_OPTIONS: { value: UserType; label: string; icon: typeof GraduationCap; desc: string }[] = [
+  { value: "candidate", label: "Candidate", icon: GraduationCap, desc: "Upload & analyze resumes" },
+  { value: "recruiter", label: "Recruiter", icon: Users, desc: "Rank & review candidates" },
+  { value: "admin", label: "Admin", icon: ShieldCheck, desc: "Platform analytics" },
+];
 
 export const Route = createFileRoute("/login")({
   component: LoginPage,
@@ -21,29 +30,36 @@ export const Route = createFileRoute("/login")({
 function LoginPage() {
   const navigate = useNavigate();
   const [mode, setMode] = useState<"signin" | "signup">("signin");
+  const [userType, setUserType] = useState<UserType>("candidate");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
   const [loading, setLoading] = useState(false);
 
-  // If user signs in (via any flow), bounce to dashboard
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_e, session) => {
-      if (session) navigate({ to: "/dashboard" });
+      if (session) {
+        const target = userType === "admin" ? "/admin" : userType === "recruiter" ? "/recruiter" : "/dashboard";
+        navigate({ to: target });
+      }
     });
     return () => subscription.unsubscribe();
-  }, [navigate]);
+  }, [navigate, userType]);
 
   const onEmail = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     try {
       if (mode === "signup") {
+        if (userType === "admin") {
+          throw new Error("Admin accounts can't be created via signup. Sign up as candidate or recruiter — the first admin can claim access from the Admin page.");
+        }
+        const signupRole = userType === "recruiter" ? "recruiter" : "student";
         const { error } = await supabase.auth.signUp({
           email, password,
           options: {
             emailRedirectTo: `${window.location.origin}/dashboard`,
-            data: { full_name: name },
+            data: { full_name: name, role: signupRole },
           },
         });
         if (error) throw error;
@@ -83,6 +99,31 @@ function LoginPage() {
           <p className="text-sm text-muted-foreground mt-1">Sign in to analyze your resume</p>
         </div>
 
+        <div className="mb-5">
+          <Label className="text-xs uppercase tracking-wider text-muted-foreground">I am a</Label>
+          <div className="mt-2 grid grid-cols-3 gap-2">
+            {ROLE_OPTIONS.map((r) => {
+              const Icon = r.icon;
+              const active = userType === r.value;
+              return (
+                <button
+                  key={r.value}
+                  type="button"
+                  onClick={() => setUserType(r.value)}
+                  className={cn(
+                    "rounded-lg border p-2.5 text-left transition",
+                    active ? "border-primary bg-primary/5 ring-2 ring-primary/30" : "border-border hover:bg-muted",
+                  )}
+                >
+                  <Icon className={cn("h-4 w-4 mb-1", active ? "text-primary" : "text-muted-foreground")} />
+                  <div className="text-xs font-semibold">{r.label}</div>
+                  <div className="text-[10px] leading-tight text-muted-foreground">{r.desc}</div>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
         <Button onClick={onGoogle} disabled={loading} variant="outline" className="w-full h-11">
           <GoogleIcon /> <span className="ml-2">Continue with Google</span>
         </Button>
@@ -120,6 +161,11 @@ function LoginPage() {
             {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             {mode === "signup" ? "Create account" : "Sign in"}
           </Button>
+          {mode === "signup" && userType === "admin" && (
+            <p className="text-xs text-muted-foreground">
+              Admins are not created via signup. Sign up as candidate or recruiter; the first user can claim admin from the Admin page.
+            </p>
+          )}
         </form>
       </Card>
     </div>
