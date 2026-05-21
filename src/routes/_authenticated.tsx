@@ -1,10 +1,13 @@
 import { createFileRoute, redirect, Outlet, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { useServerFn } from "@tanstack/react-start";
+import { useQuery } from "@tanstack/react-query";
+import { getMyRoles } from "@/lib/recruiter.functions";
 import { Button } from "@/components/ui/button";
-import { Sparkles, LogOut, LayoutDashboard, Users, Bot, MessageSquareQuote } from "lucide-react";
+import { Sparkles, LogOut, LayoutDashboard, Users, Bot, MessageSquareQuote, ShieldCheck } from "lucide-react";
 
-const NAV = [
+const BASE_NAV = [
   { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { to: "/recruiter", label: "Recruiter", icon: Users },
   { to: "/coach", label: "Coach", icon: Bot },
@@ -22,6 +25,9 @@ export const Route = createFileRoute("/_authenticated")({
 function AuthLayout() {
   const navigate = useNavigate();
   const [email, setEmail] = useState<string | null>(null);
+  const rolesFn = useServerFn(getMyRoles);
+  const rolesQ = useQuery({ queryKey: ["my-roles"], queryFn: rolesFn });
+  const isAdmin = (rolesQ.data?.roles ?? []).includes("admin");
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => setEmail(data.user?.email ?? null));
@@ -31,6 +37,10 @@ function AuthLayout() {
     await supabase.auth.signOut();
     navigate({ to: "/login" });
   };
+
+  const NAV = isAdmin
+    ? [...BASE_NAV, { to: "/admin" as const, label: "Admin", icon: ShieldCheck }]
+    : BASE_NAV;
 
   return (
     <div className="min-h-screen bg-background">
