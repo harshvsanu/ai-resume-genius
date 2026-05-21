@@ -16,9 +16,19 @@ export const bootstrapAdmin = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     const { userId } = context;
-    const { data, error } = await supabaseAdmin.rpc("bootstrap_admin", { _user_id: userId });
-    if (error) throw new Error(error.message);
-    return { granted: data === true };
+    const { data: existing, error: checkErr } = await supabaseAdmin
+      .from("user_roles")
+      .select("user_id")
+      .eq("role", "admin")
+      .limit(1);
+    if (checkErr) throw new Error(checkErr.message);
+    if (existing && existing.length > 0) return { granted: false };
+
+    const { error: insErr } = await supabaseAdmin
+      .from("user_roles")
+      .insert({ user_id: userId, role: "admin" });
+    if (insErr && !/duplicate|unique/i.test(insErr.message)) throw new Error(insErr.message);
+    return { granted: true };
   });
 
 export const getAdminStats = createServerFn({ method: "GET" })
