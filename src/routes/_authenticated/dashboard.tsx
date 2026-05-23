@@ -145,8 +145,8 @@ function Dashboard() {
   return (
     <div className="mx-auto max-w-7xl px-6 py-8">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold">Your dashboard</h1>
-        <p className="text-muted-foreground">Upload resumes, match them to jobs, get AI feedback.</p>
+        <h1 className="text-3xl font-bold">Welcome To AGMRCET Placement Cell</h1>
+        <p className="text-muted-foreground">Powered By Realtime Ai Analysis</p>
       </div>
 
       <div className="grid gap-6 lg:grid-cols-3">
