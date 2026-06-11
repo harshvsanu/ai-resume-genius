@@ -54,6 +54,11 @@ function Nav() {
 function Hero() {
   return (
     <section className="relative overflow-hidden hero-bg">
+      <div
+        className="absolute inset-0 bg-cover bg-center bg-no-repeat"
+        style={{ backgroundImage: `url(${heroBg})` }}
+      />
+      <div className="absolute inset-0 bg-background/50" />
       <div className="absolute inset-0 mesh-bg opacity-70" />
       <div className="relative mx-auto max-w-7xl px-6 pt-20 pb-24 text-center sm:pt-28 sm:pb-32">
         <h1 className="mx-auto mb-4 text-3xl font-bold tracking-tight sm:text-4xl">
