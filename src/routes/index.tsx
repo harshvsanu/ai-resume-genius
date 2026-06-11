@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import {
   Sparkles, FileSearch, Target, BarChart3, ShieldCheck, Brain, Upload, Zap, ArrowRight,
 } from "lucide-react";
+import heroBg from "../assets/hero-bg.jpg";
 
 export const Route = createFileRoute("/")({
   component: Landing,
