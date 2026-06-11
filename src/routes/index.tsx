@@ -189,7 +189,7 @@ function CTA() {
 
 function Footer() {
   return (
-    <footer className="border-t">
+    <footer className="bg-transparent">
       <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-4 px-6 py-8 text-sm text-muted-foreground">
         <div className="flex items-center gap-2">
           <Sparkles className="h-4 w-4 text-primary" /> ResumeIQ
