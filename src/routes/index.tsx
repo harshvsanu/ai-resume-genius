@@ -55,6 +55,9 @@ function Hero() {
     <section className="relative overflow-hidden hero-bg">
       <div className="absolute inset-0 mesh-bg opacity-70" />
       <div className="relative mx-auto max-w-7xl px-6 pt-20 pb-24 text-center sm:pt-28 sm:pb-32">
+        <h1 className="mx-auto mb-4 text-3xl font-bold tracking-tight sm:text-4xl">
+          Welcome To AGMRCET Placement Cell
+        </h1>
         <div className="mx-auto mb-6 inline-flex items-center gap-2 rounded-full border bg-card/60 px-4 py-1.5 text-xs font-medium text-muted-foreground backdrop-blur">
           <Zap className="h-3.5 w-3.5 text-primary" />
           Powered by real-time AI analysis · 100% free
